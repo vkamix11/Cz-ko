@@ -52,7 +52,6 @@ html, body {
   text-align: center;
   padding: 10px;
   margin: 0;
-  text-align: center;
 }
 
 #topic-select, #time-limit-container, #start-btn {
@@ -114,6 +113,7 @@ let currentWords = [];
 let currentWord = "";
 let timerInterval = null;
 let timeLeft = 0;
+let waitingForAnswer = false; // kontrola oczekiwania na ruch
 
 const wordDiv = document.getElementById("word");
 const timerDiv = document.getElementById("timer");
@@ -162,17 +162,21 @@ function nextWord() {
   timeLeft = parseInt(timeLimitInput.value);
   timerDiv.textContent = `Czas: ${timeLeft}`;
   clearInterval(timerInterval);
+  waitingForAnswer = true; // zaczynamy czekać na odpowiedź
   timerInterval = setInterval(()=>{
     timeLeft--;
     timerDiv.textContent = `Czas: ${timeLeft}`;
-    if(timeLeft<=0){
+    if(timeLeft<=0 && waitingForAnswer){
       clearInterval(timerInterval);
+      waitingForAnswer = false;
       markWrong();
     }
   },1000);
 }
 
 function markCorrect(){
+  if(!waitingForAnswer) return;
+  waitingForAnswer = false;
   clearInterval(timerInterval);
   wordDiv.style.background="#27ae60";
   setTimeout(()=>{
@@ -182,6 +186,8 @@ function markCorrect(){
 }
 
 function markWrong(){
+  if(!waitingForAnswer) return;
+  waitingForAnswer = false;
   clearInterval(timerInterval);
   wordDiv.style.background="#c0392b";
   setTimeout(()=>{
@@ -200,8 +206,8 @@ function endGame(){
 }
 
 function handleOrientation(event){
+  if(!waitingForAnswer) return;
   const beta = event.beta; // przechylenie do przodu/tyłu
-  // beta 0 = poziom, + do przodu, - do tyłu
   if(beta > 15){
     markCorrect();
   } else if(beta < -15){
