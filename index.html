@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Czółko PRO Offline - Sterowanie Ruchem</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: white;
+  overflow: hidden;
+}
+
+#game-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#orientation-warning {
+  display: none;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #111;
+  color: white;
+  justify-content: center;
+  align-items: center;
+  font-size: 5vw;
+  z-index: 1000;
+  text-align: center;
+  flex-direction: column;
+}
+
+#timer {
+  font-size: 5vw;
+  margin: 10px;
+  display: none;
+}
+
+#word {
+  font-size: 10vw;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px;
+  margin: 0;
+}
+
+#topic-select, #time-limit-container, #start-btn {
+  margin: 10px;
+}
+
+select, input, button {
+  font-size: 4vw;
+  padding: 10px;
+}
+
+#start-btn {
+  background: #2980b9;
+  color: white;
+  border: none;
+  border-radius: 10px;
+}
+@media (orientation: portrait) {
+  #orientation-warning {
+    display: flex;
+  }
+  #game-container {
+    display: none;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="orientation-warning">Proszę obrócić telefon w poziomie, aby grać!</div>
+
+<div id="game-container">
+  <div id="timer">Czas: 0</div>
+  <div id="word">Kliknij START!</div>
+
+  <div id="topic-select">
+    <select id="topic">
+      <option value="zwierzeta">Zwierzeta</option>
+      <option value="filmy">Filmy</option>
+      <option value="postacie">Postacie</option>
+    </select>
+  </div>
+
+  <div id="time-limit-container">
+    <label>Czas (sekundy): <input type="number" id="time-limit" value="10" min="5" max="60"></label>
+  </div>
+
+  <button id="start-btn">START</button>
+</div>
+
+<script>
+const wordsData = {
+  zwierzeta: ["Kot","Pies","Słoń","Lew","Pingwin","Kaczka"],
+  filmy: ["Shrek","Frozen","Harry Potter","Incepcja","Avengers"],
+  postacie: ["Batman","Superman","Kaczor Donald","Myszka Miki"]
+};
+
+let currentWords = [];
+let currentWord = "";
+let timerInterval = null;
+let timeLeft = 0;
+
+const wordDiv = document.getElementById("word");
+const timerDiv = document.getElementById("timer");
+const startBtn = document.getElementById("start-btn");
+const topicSelect = document.getElementById("topic");
+const timeLimitInput = document.getElementById("time-limit");
+const timeLimitContainer = document.getElementById("time-limit-container");
+const topicContainer = document.getElementById("topic-select");
+
+function startGame() {
+  currentWords = [...wordsData[topicSelect.value]];
+  startBtn.style.display = "none";
+  topicContainer.style.display = "none";
+  timeLimitContainer.style.display = "none";
+  timerDiv.style.display = "block";
+  nextWord();
+  window.addEventListener("deviceorientation", handleOrientation);
+}
+
+function nextWord() {
+  if(currentWords.length === 0){
+    endGame();
+    return;
+  }
+  const index = Math.floor(Math.random() * currentWords.length);
+  currentWord = currentWords[index];
+  currentWords.splice(index,1);
+  wordDiv.textContent = currentWord;
+
+  timeLeft = parseInt(timeLimitInput.value);
+  timerDiv.textContent = `Czas: ${timeLeft}`;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    timeLeft--;
+    timerDiv.textContent = `Czas: ${timeLeft}`;
+    if(timeLeft<=0){
+      clearInterval(timerInterval);
+      markWrong();
+    }
+  },1000);
+}
+
+function markCorrect(){
+  clearInterval(timerInterval);
+  wordDiv.style.background="#27ae60";
+  setTimeout(()=>{
+    wordDiv.style.background="transparent";
+    nextWord();
+  },300);
+}
+
+function markWrong(){
+  clearInterval(timerInterval);
+  wordDiv.style.background="#c0392b";
+  setTimeout(()=>{
+    wordDiv.style.background="transparent";
+    nextWord();
+  },300);
+}
+
+function endGame(){
+  wordDiv.textContent="Koniec rundy!";
+  startBtn.style.display="block";
+  topicContainer.style.display="flex";
+  timeLimitContainer.style.display="flex";
+  timerDiv.style.display="none";
+  window.removeEventListener("deviceorientation", handleOrientation);
+}
+
+function handleOrientation(event){
+  // gamma -> przechylenie telefonu do przodu/tyłu
+  const gamma = event.gamma; // w stopniach, -90 do 90
+  if(gamma > 20){
+    markCorrect(); // przechylenie do przodu
+  } else if(gamma < -20){
+    markWrong();   // przechylenie do tyłu
+  }
+}
+
+startBtn.addEventListener("click", startGame);
+</script>
+
+</body>
+</html>
