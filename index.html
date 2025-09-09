@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Czółko PRO Offline - Sterowanie Ruchem</title>
+<title>Czółko PRO - Sterowanie Ruchem</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
 html, body {
@@ -52,6 +52,7 @@ html, body {
   text-align: center;
   padding: 10px;
   margin: 0;
+  text-align: center;
 }
 
 #topic-select, #time-limit-container, #start-btn {
@@ -128,8 +129,24 @@ function startGame() {
   topicContainer.style.display = "none";
   timeLimitContainer.style.display = "none";
   timerDiv.style.display = "block";
+
+  // Poproś o pozwolenie na czujniki w iOS/Chrome
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(response => {
+        if (response === 'granted') {
+          window.addEventListener("deviceorientation", handleOrientation);
+        } else {
+          alert("Brak dostępu do czujników ruchu!");
+        }
+      })
+      .catch(console.error);
+  } else {
+    // Android i starsze przeglądarki
+    window.addEventListener("deviceorientation", handleOrientation);
+  }
+
   nextWord();
-  window.addEventListener("deviceorientation", handleOrientation);
 }
 
 function nextWord() {
@@ -183,12 +200,12 @@ function endGame(){
 }
 
 function handleOrientation(event){
-  // gamma -> przechylenie telefonu do przodu/tyłu
-  const gamma = event.gamma; // w stopniach, -90 do 90
-  if(gamma > 20){
-    markCorrect(); // przechylenie do przodu
-  } else if(gamma < -20){
-    markWrong();   // przechylenie do tyłu
+  const beta = event.beta; // przechylenie do przodu/tyłu
+  // beta 0 = poziom, + do przodu, - do tyłu
+  if(beta > 15){
+    markCorrect();
+  } else if(beta < -15){
+    markWrong();
   }
 }
 
