@@ -143,7 +143,6 @@ function startGame() {
   timeLimitContainer.style.display = "none";
   timerDiv.style.display = "block";
 
-  // Poproś o pozwolenie na czujniki w iOS/Chrome
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission()
       .then(response => {
@@ -190,6 +189,7 @@ function nextWord() {
 function showFeedback(result){
   feedbackDiv.textContent = result;
   feedbackDiv.style.display = "block";
+  wordDiv.textContent = ""; // hasło znika
   wordDiv.style.background = result === "DOBRZE" ? "#27ae60" : "#c0392b";
 
   setTimeout(()=>{
@@ -224,11 +224,11 @@ function endGame(){
 
 function handleOrientation(event){
   if(!waitingForAnswer) return;
-  const beta = event.beta; // przechylenie do przodu/tyłu
-  if(beta < -15){ // przechylony do tyłu -> DOBRZE
-    markCorrect();
-  } else if(beta > 15){ // przechylony do przodu -> ŹLE
+  const beta = event.beta;
+  if(beta > 15){ // przechylony do przodu -> ŹLE
     markWrong();
+  } else if(beta < -15){ // przechylony do tyłu -> DOBRZE
+    markCorrect();
   }
 }
 
