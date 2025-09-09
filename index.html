@@ -52,6 +52,16 @@ html, body {
   text-align: center;
   padding: 10px;
   margin: 0;
+  text-align: center;
+}
+
+#feedback {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15vw;
+  font-weight: bold;
+  display: none;
 }
 
 #topic-select, #time-limit-container, #start-btn {
@@ -69,6 +79,7 @@ select, input, button {
   border: none;
   border-radius: 10px;
 }
+
 @media (orientation: portrait) {
   #orientation-warning {
     display: flex;
@@ -86,6 +97,7 @@ select, input, button {
 <div id="game-container">
   <div id="timer">Czas: 0</div>
   <div id="word">Kliknij START!</div>
+  <div id="feedback"></div>
 
   <div id="topic-select">
     <select id="topic">
@@ -113,7 +125,7 @@ let currentWords = [];
 let currentWord = "";
 let timerInterval = null;
 let timeLeft = 0;
-let waitingForAnswer = false; // kontrola oczekiwania na ruch
+let waitingForAnswer = false;
 
 const wordDiv = document.getElementById("word");
 const timerDiv = document.getElementById("timer");
@@ -122,6 +134,7 @@ const topicSelect = document.getElementById("topic");
 const timeLimitInput = document.getElementById("time-limit");
 const timeLimitContainer = document.getElementById("time-limit-container");
 const topicContainer = document.getElementById("topic-select");
+const feedbackDiv = document.getElementById("feedback");
 
 function startGame() {
   currentWords = [...wordsData[topicSelect.value]];
@@ -142,7 +155,6 @@ function startGame() {
       })
       .catch(console.error);
   } else {
-    // Android i starsze przeglądarki
     window.addEventListener("deviceorientation", handleOrientation);
   }
 
@@ -162,38 +174,43 @@ function nextWord() {
   timeLeft = parseInt(timeLimitInput.value);
   timerDiv.textContent = `Czas: ${timeLeft}`;
   clearInterval(timerInterval);
-  waitingForAnswer = true; // zaczynamy czekać na odpowiedź
+  waitingForAnswer = true;
+
   timerInterval = setInterval(()=>{
     timeLeft--;
     timerDiv.textContent = `Czas: ${timeLeft}`;
     if(timeLeft<=0 && waitingForAnswer){
       clearInterval(timerInterval);
       waitingForAnswer = false;
-      markWrong();
+      showFeedback("ŹLE");
     }
   },1000);
+}
+
+function showFeedback(result){
+  feedbackDiv.textContent = result;
+  feedbackDiv.style.display = "block";
+  wordDiv.style.background = result === "DOBRZE" ? "#27ae60" : "#c0392b";
+
+  setTimeout(()=>{
+    feedbackDiv.style.display = "none";
+    wordDiv.style.background = "transparent";
+    nextWord();
+  },3000); // pokazuj 3 sekundy
 }
 
 function markCorrect(){
   if(!waitingForAnswer) return;
   waitingForAnswer = false;
   clearInterval(timerInterval);
-  wordDiv.style.background="#27ae60";
-  setTimeout(()=>{
-    wordDiv.style.background="transparent";
-    nextWord();
-  },300);
+  showFeedback("DOBRZE");
 }
 
 function markWrong(){
   if(!waitingForAnswer) return;
   waitingForAnswer = false;
   clearInterval(timerInterval);
-  wordDiv.style.background="#c0392b";
-  setTimeout(()=>{
-    wordDiv.style.background="transparent";
-    nextWord();
-  },300);
+  showFeedback("ŹLE");
 }
 
 function endGame(){
@@ -208,9 +225,9 @@ function endGame(){
 function handleOrientation(event){
   if(!waitingForAnswer) return;
   const beta = event.beta; // przechylenie do przodu/tyłu
-  if(beta > 15){
+  if(beta < -15){ // przechylony do tyłu -> DOBRZE
     markCorrect();
-  } else if(beta < -15){
+  } else if(beta > 15){ // przechylony do przodu -> ŹLE
     markWrong();
   }
 }
